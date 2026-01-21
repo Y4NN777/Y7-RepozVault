@@ -1,13 +1,14 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { GeminiRepoAnalysis, Repository } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get a fresh AI instance
+const getAi = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function analyzeRepository(
   repoUrl: string, 
   userNotes: string = ""
 ): Promise<GeminiRepoAnalysis> {
+  const ai = getAi();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Analyze this GitHub repository: ${repoUrl}. User notes: ${userNotes}. 
@@ -30,13 +31,16 @@ export async function analyzeRepository(
     }
   });
 
-  return JSON.parse(response.text.trim()) as GeminiRepoAnalysis;
+  const text = response.text;
+  if (!text) throw new Error("Empty response from Gemini");
+  return JSON.parse(text.trim()) as GeminiRepoAnalysis;
 }
 
 export async function getSmartRecommendation(
   repos: Repository[],
   userVibe: string
 ): Promise<{ repoId: string; reason: string }> {
+  const ai = getAi();
   const repoContext = repos.map(r => ({
     id: r.id,
     name: r.name,
@@ -63,5 +67,7 @@ export async function getSmartRecommendation(
     }
   });
 
-  return JSON.parse(response.text.trim());
+  const text = response.text;
+  if (!text) throw new Error("Empty response from Gemini");
+  return JSON.parse(text.trim());
 }
